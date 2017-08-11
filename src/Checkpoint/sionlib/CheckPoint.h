@@ -57,7 +57,7 @@
 
 #include "Checkpoint/CheckPoint.h"
 #include "Initializer/preProcessorMacros.fpp"
-#include "Initializer/typedefs.hpp"
+#include "Kernels/precision.hpp"
 
 namespace seissol
 {

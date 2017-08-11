@@ -5,7 +5,7 @@
  * @author Sebastian Rettenberger (sebastian.rettenberger AT tum.de, http://www5.in.tum.de/wiki/index.php/Sebastian_Rettenberger)
  *
  * @section LICENSE
- * Copyright (c) 2014-2015, SeisSol Group
+ * Copyright (c) 2014-2017, SeisSol Group
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,6 @@
 
 #include "CheckPoint.h"
 #include "Checkpoint/Wavefield.h"
-#include "Initializer/typedefs.hpp"
 
 #endif // USE_HDF
 

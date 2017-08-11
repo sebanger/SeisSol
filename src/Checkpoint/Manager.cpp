@@ -40,7 +40,9 @@
 #include "utils/logger.h"
 
 #include "Manager.h"
+#ifndef CHECKPOINT_BENCH
 #include "SeisSol.h"
+#endif // CHECKPOINT_BENCH
 
 bool seissol::checkpoint::Manager::init(real* dofs, unsigned int numDofs,
 		double* mu, double* slipRate1, double* slipRate2, double* slip, double* slip1, double* slip2,
@@ -83,9 +85,14 @@ bool seissol::checkpoint::Manager::init(real* dofs, unsigned int numDofs,
 		waveField->setFilename(m_filename.c_str());
 		fault->setFilename(m_filename.c_str());
 
-		int exists = waveField->init(numDofs, seissol::SeisSol::main.asyncIO().groupSize());
-		exists &= fault->init(numSides, numBndGP,
-			seissol::SeisSol::main.asyncIO().groupSize());
+#ifdef CHECKPOINT_BENCH
+		const unsigned int groupSize = 1;
+#else // CHECKPOINT_BENCH
+		const unsigned int groupSize = seissol::SeisSol::main.asyncIO().groupSize();
+#endif // CHECKPOINT_BENCH
+
+		int exists = waveField->init(numDofs, groupSize);
+		exists &= fault->init(numSides, numBndGP, groupSize);
 
 		// Make sure all ranks think the same about the existing checkpoint
 #ifdef USE_MPI
