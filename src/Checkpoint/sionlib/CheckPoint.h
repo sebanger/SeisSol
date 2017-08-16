@@ -310,7 +310,7 @@ protected:
 	template<typename T, typename U>
 	static void checkErr(T ret, U target) {
 		checkErr(ret);
-		if (ret != target)
+		if (ret < target)
 			logError() << "Error in the SIONlib checkpoint module: Expected:"
 				<< target << "Received:" << ret;
 	}
