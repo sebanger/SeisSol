@@ -910,6 +910,24 @@ MODULE TypesDef
      REAL                                   :: RS_b                             !< RS constitutive parameter "b"
      REAL                                   :: RS_iniSlipRate1                  !< initial slip rate for rate and state friction
      REAL                                   :: RS_iniSlipRate2                  !< initial slip rate for rate and state friction
+     INTEGER                                :: ThermalPress                     !< Thermal pressurization, (0) = no thermal pressurization assumed, (1) thermal pressurization at the fault
+     REAL, POINTER                          :: TP(:,:,:)                        !<TP variable: temp and pore pressure at every GP
+     REAL                                   :: TP_Theta                         !<TP variable: previous temp for each wavenumber at every GP
+     REAL                                   :: TP_Sigma                         !<TP variable: previous pore pressure for each wavenumber at every GP
+     REAL, ALLOCATABLE                      :: TP_Theta_array(:,:,:)
+     REAL, ALLOCATABLE                      :: TP_Sigma_array(:,:,:)
+     REAL, ALLOCATABLE                      :: TP_grid(:)                       !<TP variable: wavenumber grid
+     INTEGER                                :: TP_nz                            !<TP variable: number of points in the wavenumber domain
+     REAL, POINTER                          :: TP_DFinv(:)                      !<TP variable: inverse Fourier coefficients
+     REAL                                   :: IniTemp                          !<Initial temperature for TP calculations
+     REAL                                   :: IniPP_xx                         !<Initial pore pressure for TP calculations in x-direction
+     REAL                                   :: IniPP_yy                         !<Initial pore pressure for TP calculations in y-direction
+     REAL                                   :: IniPP_xy                         !<Initial pore pressure for TP calculations in shear direction
+     REAL                                   :: alpha_th                         !<thermal diffusivity for TP
+     REAL                                   :: alpha_hy                         !<hydraulic diffusivity for TP
+     REAL                                   :: rho_c                            !<heat capacity for TP
+     REAL                                   :: hwid                             !<half width of the shear zone for TP
+     REAL                                   :: TP_Lambda                        !<pore pressure increase for unit increase in temperature, used in TP
      REAL                                   :: Mu_W                             !< velocity weakening friction coefficient
      REAL                                   :: RS_srW                           !< velocity weakening scale
      REAL                                   :: Mu_S_ini                         !< Static friction coefficient ini scalar value

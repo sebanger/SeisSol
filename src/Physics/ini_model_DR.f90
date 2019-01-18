@@ -585,8 +585,10 @@ MODULE ini_model_DR_mod
   TYPE (tBoundary)               :: BND
   !-------------------------------------------------------------------------!
   ! Local variable declaration
-  INTEGER                        :: iFace, iBndGP
+  INTEGER                        :: iFace, iBndGP, inz
   REAL                           :: iniSlipRate, tmp
+  REAL                           :: Dwnmax, dlDwn
+  REAL, PARAMETER                :: pi=3.141592653589793
 
   !-------------------------------------------------------------------------!
   INTENT(IN)    :: MESH,BND
@@ -606,6 +608,26 @@ MODULE ini_model_DR_mod
           ! ASINH(X)=LOG(X+SQRT(X^2+1))
           tmp  = iniSlipRate*0.5/DISC%DynRup%RS_sr0 * EXP(EQN%IniStateVar(iBndGP,iFace)/ DISC%DynRup%RS_a_array(iBndGP,iFace))
           EQN%IniMu(iBndGP,iFace)=DISC%DynRup%RS_a_array(iBndGP,iFace) * LOG(tmp + SQRT(tmp**2 + 1.0D0))
+          IF (DISC%DynRup%ThermalPress.EQ.1) THEN
+              DISC%DynRup%TP(iBndGP,iFace,1) = DISC%DynRup%IniTemp
+              DISC%DynRup%TP(iBndGP,iFace,2) = DISC%DynRup%IniPP_xx
+              DO inz = 1,DISC%DynRup%TP_nz ! Loop over all points in the wavenumber domain
+                  DISC%DynRup%TP_Theta_array(iBndGP,iFace,inz) = DISC%DynRup%TP_Theta
+                  DISC%DynRup%TP_Sigma_array(iBndGP,iFace,inz) = DISC%DynRup%TP_Sigma
+                  ! wavenumber grid where fourier coefficients are sampled
+                  Dwnmax = 10.0D0 ! zone where we resolve the diffusion
+                  dlDwn = 0.3D0 ! logarithmic grid space distance
+                  DISC%DynRup%TP_grid(inz) = Dwnmax / DISC%DynRup%hwid * exp(-dlDwn*(DISC%DynRup%TP_nz-inz))
+                  ! calculating inverse Fourier coefficients
+                  IF (inz.EQ.1) THEN
+                      DISC%DynRup%TP_DFinv(inz) = sqrt(2/pi) * DISC%DynRup%TP_grid(inz) * (1.0D0 + dlDwn * 0.5D0)
+                  ELSEIF (inz.EQ.DISC%DynRup%TP_nz) THEN
+                      DISC%DynRup%TP_DFinv(inz) = sqrt(2/pi) * DISC%DynRup%TP_grid(inz) * dlDwn * 0.5D0
+                  ELSE
+                      DISC%DynRup%TP_DFinv(inz) = sqrt(2/pi) * DISC%DynRup%TP_grid(inz) * dlDwn * 0.5D0
+                  ENDIF 
+              ENDDO ! inz
+          ENDIF ! End Thermal pressurization
       ENDDO ! iBndGP
   ENDDO !    MESH%Fault%nSide
 
