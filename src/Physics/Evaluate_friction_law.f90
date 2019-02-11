@@ -1352,6 +1352,8 @@ MODULE Eval_friction_law_mod
                             time,DeltaT,                               & ! IN: time
                             DISC,EQN,MESH,MPI,IO,BND)
     !-------------------------------------------------------------------------!
+    USE Thermal_pressure_mod
+    !-------------------------------------------------------------------------!
     IMPLICIT NONE
     !-------------------------------------------------------------------------!
     TYPE(tEquations)               :: EQN
@@ -1383,6 +1385,7 @@ MODULE Eval_friction_law_mod
     REAL        :: time_inc
     REAL        :: Deltat(1:nTimeGP)
     REAL        :: SV0(nBndGP), tmp(nBndGP), tmp2(nBndGP), tmp3(nBndGP), SRtest(nBndGP), NR(nBndGP), dNR(nBndGP)
+    REAL        :: LocSR_old(nBndGP), P_f(nBndGP), Theta_tmp(nBndGP), Sigma_tmp(nBndGP), n_stress(nBndGP), sh_stress(nBndGP), S(nBndGP)
     REAL        :: LocSV(nBndGP)
     REAL        :: tmpSlip(nBndGP)
     REAL        :: RS_f0,RS_a(nBndGP),RS_b,RS_sl0(nBndGP),RS_sr0
@@ -1487,6 +1490,15 @@ MODULE Eval_friction_law_mod
          tmp = LocSR
          invZ = (1.0d0/w_speed(2)/rho+1.0d0/w_speed_neig(2)/rho_neig)
 
+         IF (DISC%DynRup%ThermalPress.EQ.1) THEN
+             LocSR_old = ABS(LocSR)
+             DO iBndGP=1,nBndGP
+                  P_f(iBndGP) = DISC%DynRup%TP(iBndGP,iFace,2)
+             ENDDO
+         ELSE
+             P_f(:) = 0.0
+         ENDIF
+
          DO j=1,nSVupdates   !This loop corrects SV values
              !
              !1. update SV using Vold from the previous time step
@@ -1508,6 +1520,24 @@ MODULE Eval_friction_law_mod
              !         g = SR*MU/2/cs + T^G             (eq. 18 of de la Puente et al. (2009))
              !         f = (mu*P_0-|S_0|)*S_0/|S_0|     (Coulomb's model of friction)
              !  where mu = a * arcsinh[ V/(2*V0) * exp(SV/a) ]
+
+             IF (DISC%DynRup%ThermalPress.EQ.1) THEN
+                 logInfo0(*) 'P_f before', P_f(1)
+                 S = LocMu*(P_0 + LocP - P_f)
+                 logInfo0(*) 'nBndGP', nBndGP
+                 DO iBndGP=1,nBndGP
+                     !recover original values as it gets overwritten in Therm routine
+                     Theta_tmp = DISC%DynRup%TP_Theta_array(iBndGP,iFace,:)
+                     Sigma_tmp = DISC%DynRup%TP_Sigma_array(iBndGP,iFace,:)
+                     CALL Thermal_pressure_3D(DISC, time_inc, DISC%DynRup%TP_nz, DISC%DynRup%alpha_th, DISC%DynRup%alpha_hy, DISC%DynRup%rho_c, DISC%DynRup%TP_Lambda, Theta_tmp(:), Sigma_tmp(:), S(iBndGP), LocSR(iBndGP), DISC%DynRup%TP_grid, DISC%DynRup%TP_DFinv, DISC%DynRup%TP(iBndGP,iFace,1), DISC%DynRup%TP(iBndGP,iFace,2))
+                     P_f(iBndGP) = - DISC%DynRup%TP(iBndGP,iFace,2)
+                 ENDDO
+             ENDIF
+             logInfo0(*) 'P_f Erste', P_f(1)
+             n_stress = P - P_f
+             sh_stress = ShTest
+
+
              SRtest=LocSR  ! We use as first guess the SR value of the previous time step
              !
              tmp          = 0.5D0/RS_sr0* EXP(LocSV/RS_a)
@@ -1516,12 +1546,12 @@ MODULE Eval_friction_law_mod
              DO i=1,nSRupdates  !This loop corrects SR values
                  ! for convenience
                  tmp2         = tmp*SRtest != X in ASINH(X) for mu calculation
-                 NR           = -invZ * (ABS(P)*RS_a*LOG(tmp2+SQRT(tmp2**2+1.0))-ShTest)-SRtest
+                 NR           = -invZ * (ABS(n_stress)*RS_a*LOG(tmp2+SQRT(tmp2**2+1.0))-ABS(sh_stress))-SRtest
                  IF (maxval(abs(NR))<atolF) THEN
                     has_converged = .TRUE.
                     EXIT
                  ENDIF
-                 dNR          = -invZ * (ABS(P)*RS_a/SQRT(1d0+tmp2**2)*tmp) -1.0
+                 dNR          = -invZ * (ABS(n_stress)*RS_a/SQRT(1d0+tmp2**2)*tmp) -1.0
                  tmp3 = NR/dNR
                  SRtest = max(AlmostZero,SRtest - tmp3)
              ENDDO
@@ -1546,10 +1576,27 @@ MODULE Eval_friction_law_mod
          !Mu from LocSR
          tmp = 0.5D0*(LocSR)/RS_sr0 * EXP(LocSV/RS_a)
          LocMu    = RS_a * LOG(tmp+SQRT(tmp**2+1.0D0))
-         ! update stress change
 
-         LocTracXY = -((EQN%InitialStressInFaultCS(:,4,iFace) + XYStressGP(:,iTimeGP))/ShTest)*LocMu*P
-         LocTracXZ = -((EQN%InitialStressInFaultCS(:,6,iFace) + XZStressGP(:,iTimeGP))/ShTest)*LocMu*P
+         IF (DISC%DynRup%ThermalPress.EQ.1) THEN
+                 ! use updated friction and pore pressure in second step
+                 S = LocMu*(P_0 + LocP - P_f) ! current strength
+                 DO iBndGP=1,nBndGP
+                     !recover original values as it gets overwritten in Therm_pressure routine
+                     Theta_tmp = DISC%DynRup%TP_Theta_array(iBndGP,iFace,:)
+                     Sigma_tmp = DISC%DynRup%TP_Sigma_array(iBndGP,iFace,:)
+                     CALL Thermal_pressure_3D(DISC, time_inc, DISC%DynRup%TP_nz, DISC%DynRup%alpha_th, DISC%DynRup%alpha_hy, DISC%DynRup%rho_c, DISC%DynRup%TP_Lambda, Theta_tmp(:), Sigma_tmp(:), S(iBndGP), LocSR(iBndGP), DISC%DynRup%TP_grid, DISC%DynRup%TP_DFinv, DISC%DynRup%TP(iBndGP,iFace,1), DISC%DynRup%TP(iBndGP,iFace,2))
+                     !update final TP
+                     P_f = - DISC%DynRup%TP(iBndGP,iFace,2)
+                     DISC%DynRup%TP_Theta_array(iBndGP,iFace,:) = Theta_tmp(:)
+                     DISC%DynRup%TP_Sigma_array(iBndGP,iFace,:) = Sigma_tmp(:)
+                ENDDO
+         ENDIF
+
+         ! update stress change
+         logInfo0(*) 'Pressure', P(1)
+         logInfo0(*) 'Pore pressure Ende', P_f(1)
+         LocTracXY = -((EQN%InitialStressInFaultCS(:,4,iFace) + XYStressGP(:,iTimeGP))/ShTest)*LocMu*(P - P_f)
+         LocTracXZ = -((EQN%InitialStressInFaultCS(:,6,iFace) + XZStressGP(:,iTimeGP))/ShTest)*LocMu*(P - P_f)
          LocTracXY = LocTracXY - EQN%InitialStressInFaultCS(:,4,iFace)
          LocTracXZ = LocTracXZ - EQN%InitialStressInFaultCS(:,6,iFace)
          !
