@@ -255,6 +255,13 @@ MODULE ini_model_DR_mod
           call c_interoperability_addFaultParameter("nuc_yz" // c_null_char, nuc_yz)
           call c_interoperability_addFaultParameter("nuc_xz" // c_null_char, nuc_xz)
         endif
+        if (DISC%DynRup%ThermalPress.EQ.1) then
+          ALLOCATE(DISC%DynRup%TP(DISC%Galerkin%nBndGP, MESH%Fault%nSide,2))
+          ALLOCATE(DISC%DynRup%TP_Sigma_array(DISC%Galerkin%nBndGP, MESH%Fault%nSide,DISC%DynRup%TP_nz))
+          ALLOCATE(DISC%DynRup%TP_Theta_array(DISC%Galerkin%nBndGP, MESH%Fault%nSide,DISC%DynRup%TP_nz))
+          ALLOCATE(DISC%DynRup%TP_grid(DISC%DynRup%TP_nz))
+          ALLOCATE(DISC%DynRup%TP_DFinv(DISC%DynRup%TP_nz))
+        endif
       end if
     END SELECT
 

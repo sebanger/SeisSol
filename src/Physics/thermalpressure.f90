@@ -1,5 +1,12 @@
 !Pseudo code for TP
 
+#ifdef BG 
+#include "../Initializer/preProcessorMacros.fpp"
+#else
+#include "Initializer/preProcessorMacros.fpp"
+#endif
+
+
 MODULE Thermal_pressure_mod
   !---------------------------------------------------------------------------!
   USE TypesDef
@@ -44,17 +51,18 @@ CONTAINS
     REAL        :: temperature, pressure                                      ! temperatur, pressure in space domain
     !-------------------------------------------------------------------------!
     INTENT(IN)  :: DISC, nz, alpha_th, alpha_hy, rho_c, Lambda, Sh, SR, Dwn, DFinv
-    INTENT(INOUT):: theta, sigma
-    INTENT(OUT) :: temperature, pressure
+    INTENT(INOUT):: theta, sigma, temperature, pressure
     !-------------------------------------------------------------------------!
 
 
-    tauV = Sh*SR !fault strenght*slip rate
+    tauV = 0D0 ! Sh*SR !fault strenght*slip rate
     Lambda_prime = Lambda*alpha_th/(alpha_hy-alpha_th)
     hwid = DISC%DynRup%hwid
     tmp = (Dwn/hwid)**2
 
     !1. Calculate diffusion of the field at previous timestep
+    logInfo0(*) 'theta before', theta(1)
+    logInfo0(*) 'sigma before', sigma(1)
 
     !temperature
     theta_current = theta*exp(-alpha_th*dt*tmp)
@@ -86,6 +94,12 @@ CONTAINS
     !Temp and pore pressure change at single GP on the fault + initial values
     temperature = T + DISC%DynRup%IniTemp
     pressure = p + DISC%DynRup%IniPP_xx
+    logInfo0(*) 'Theta', theta(1)
+    logInfo0(*) 'Sigma', sigma(1)
+    logInfo0(*) 'Theta_current', theta_current(1)
+    logInfo0(*) 'Sigma_current', sigma_current(1)
+    logInfo0(*) 'pore pressure in TP', pressure
+
 
   END SUBROUTINE Thermal_pressure_3D
 

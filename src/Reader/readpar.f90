@@ -1361,6 +1361,16 @@ CONTAINS
                  DISC%DynRup%TP_Lambda = TP_Lambda ! pore pressure increase for unit increase in temperature
                  DISC%DynRup%TP_Theta = TP_Theta ! previous temp for each wavenumber
                  DISC%DynRup%TP_Sigma = TP_Sigma ! previous pore pressure for each wavenumber
+                 logInfo0(*) 'TP_nz', TP_nz
+                 logInfo0(*) 'TP_Lambda', TP_Lambda
+                 logInfo0(*) 'TP_Theta', TP_Theta
+                 logInfo0(*) 'TP_Sigma', TP_Sigma
+                 logInfo0(*) 'TP_alpha_th', alpha_th
+                 logInfo0(*) 'TP_alpha_hy', alpha_hy
+                 logInfo0(*) 'TP_PPx', IniPP_xx
+                 logInfo0(*) 'TP_Temp', IniTemp
+                 logInfo0(*) 'TP_rho_cc', rho_c
+                 logInfo0(*) 'TP_hwid', hwid
              ELSE
                  logInfo0(*) 'No Thermal Pressurization assumed'
              ENDIF
