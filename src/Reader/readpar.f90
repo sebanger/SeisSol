@@ -1220,7 +1220,10 @@ CONTAINS
                                               Mu_SNuc_ini, H_Length, RS_f0, &
                                               RS_sr0, RS_b, RS_iniSlipRate1, &
                                               RS_iniSlipRate2, v_star, L, t_0, Mu_W, &
-                                              NucRS_sv0, r_s, energy_rate_printtimeinterval
+                                              NucRS_sv0, r_s, energy_rate_printtimeinterval, &
+                                              TP_nz, TP_Lambda, TP_Theta, TP_Sigma, IniTemp, &
+                                              IniPP_xx, IniPP_yy, alpha_th, alpha_hy, rho_c, &
+                                              hwid, ThermalPress
 
     !------------------------------------------------------------------------
     NAMELIST                              /DynamicRupture/ FL, BackgroundType, &
@@ -1230,6 +1233,9 @@ CONTAINS
                                                 RS_sr0, RS_b, RS_iniSlipRate1, &
                                                 RS_iniSlipRate2, v_star, L, t_0, Mu_W, &
                                                 NucRS_sv0, r_s, RF_output_on, DS_output_on, &
+                                                TP_nz, TP_Lambda, TP_Theta, TP_Sigma, IniTemp, &
+                                                IniPP_xx, IniPP_yy, alpha_th, alpha_hy, rho_c, &
+                                                hwid, ThermalPress, &
                                                 OutputPointType, magnitude_output_on, energy_rate_output_on, energy_rate_printtimeinterval,  &
                                                 SlipRateOutputType, ModelFileName
     !------------------------------------------------------------------------
@@ -1258,6 +1264,18 @@ CONTAINS
     RS_b = 0
     RS_iniSlipRate1 = 0
     RS_iniSlipRate2 = 0
+    ThermalPress = 0
+    TP_nz = 0
+    TP_Lambda = 0
+    TP_Theta = 0
+    TP_Sigma = 0
+    IniTemp = 0
+    IniPP_xx = 0
+    IniPP_yy = 0
+    alpha_th = 0
+    alpha_hy = 0
+    rho_c = 0
+    hwid = 0
     v_star = 0
     t_0 = 0
     L = 0
@@ -1329,6 +1347,33 @@ CONTAINS
              DISC%DynRup%RS_iniSlipRate1 = RS_iniSlipRate1! V_ini1, initial sliding velocity
              DISC%DynRup%RS_iniSlipRate2 = RS_iniSlipRate2! V_ini2, initial sliding velocity
              DISC%DynRup%t_0      = t_0       ! forced rupture decay time
+             DISC%DynRup%ThermalPress = ThermalPress ! look if thermal pressurization is assumed
+             IF (DISC%DynRup%ThermalPress.EQ.1) THEN
+                 logInfo0(*) 'Thermal Pressurization assumed'
+                 DISC%DynRup%TP_nz = TP_nz ! number of points in the wavenumber domain
+                 DISC%DynRup%IniTemp = IniTemp ! initial temperature
+                 DISC%DynRup%IniPP_xx = IniPP_xx ! initial pore pressure in x-direction
+                 DISC%DynRup%IniPP_yy = IniPP_yy ! initial pore pressure in y-direction
+                 DISC%DynRup%alpha_th = alpha_th ! thermal diffusivity
+                 DISC%DynRup%alpha_hy = alpha_hy ! hydraulic diffusivity
+                 DISC%DynRup%rho_c = rho_c ! heat capacity
+                 DISC%DynRup%hwid = hwid ! half width of the seahr zone
+                 DISC%DynRup%TP_Lambda = TP_Lambda ! pore pressure increase for unit increase in temperature
+                 DISC%DynRup%TP_Theta = TP_Theta ! previous temp for each wavenumber
+                 DISC%DynRup%TP_Sigma = TP_Sigma ! previous pore pressure for each wavenumber
+                 logInfo0(*) 'TP_nz', TP_nz
+                 logInfo0(*) 'TP_Lambda', TP_Lambda
+                 logInfo0(*) 'TP_Theta', TP_Theta
+                 logInfo0(*) 'TP_Sigma', TP_Sigma
+                 logInfo0(*) 'TP_alpha_th', alpha_th
+                 logInfo0(*) 'TP_alpha_hy', alpha_hy
+                 logInfo0(*) 'TP_PPx', IniPP_xx
+                 logInfo0(*) 'TP_Temp', IniTemp
+                 logInfo0(*) 'TP_rho_cc', rho_c
+                 logInfo0(*) 'TP_hwid', hwid
+             ELSE
+                 logInfo0(*) 'No Thermal Pressurization assumed'
+             ENDIF
            CASE DEFAULT
              logError(*) 'Unknown friction law ',EQN%FL
              STOP
