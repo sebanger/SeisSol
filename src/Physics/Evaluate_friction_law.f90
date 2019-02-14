@@ -1475,6 +1475,8 @@ MODULE Eval_friction_law_mod
          RS_a   = DISC%DynRup%RS_a_array(:,iFace) ! a, direct effect, space dependent
          RS_b   = DISC%DynRup%RS_b       ! b, evolution effect
          RS_sl0 = DISC%DynRup%RS_sl0_array(:,iFace)     ! L, char. length scale
+         
+         P_f = DISC%DynRup%P_f_array(:,iFace)    ! pore pressure, space dependent
          !
          ! load traction and normal stress
          P      = LocP+P_0
@@ -1492,11 +1494,6 @@ MODULE Eval_friction_law_mod
 
          IF (DISC%DynRup%ThermalPress.EQ.1) THEN
              LocSR_old = ABS(LocSR)
-             DO iBndGP=1,nBndGP
-                  P_f(iBndGP) = DISC%DynRup%TP(iBndGP,iFace,2)
-             ENDDO
-         ELSE
-             P_f(:) = 0.0
          ENDIF
 
          DO j=1,nSVupdates   !This loop corrects SV values
@@ -1522,21 +1519,17 @@ MODULE Eval_friction_law_mod
              !  where mu = a * arcsinh[ V/(2*V0) * exp(SV/a) ]
 
              IF (DISC%DynRup%ThermalPress.EQ.1) THEN
-                 logInfo0(*) 'P_f before', P_f(1)
                  S = LocMu*(P_0 + LocP - P_f)
-                 logInfo0(*) 'nBndGP', nBndGP
                  DO iBndGP=1,nBndGP
                      !recover original values as it gets overwritten in Therm routine
                      Theta_tmp = DISC%DynRup%TP_Theta_array(iBndGP,iFace,:)
                      Sigma_tmp = DISC%DynRup%TP_Sigma_array(iBndGP,iFace,:)
-                     CALL Thermal_pressure_3D(DISC, time_inc, DISC%DynRup%TP_nz, DISC%DynRup%alpha_th, DISC%DynRup%alpha_hy, DISC%DynRup%rho_c, DISC%DynRup%TP_Lambda, Theta_tmp(:), Sigma_tmp(:), S(iBndGP), LocSR(iBndGP), DISC%DynRup%TP_grid, DISC%DynRup%TP_DFinv, DISC%DynRup%TP(iBndGP,iFace,1), DISC%DynRup%TP(iBndGP,iFace,2))
-                     P_f(iBndGP) = - DISC%DynRup%TP(iBndGP,iFace,2)
+                     CALL Thermal_pressure_3D(DISC, time_inc, DISC%DynRup%TP_nz, DISC%DynRup%alpha_th, DISC%DynRup%alpha_hy, DISC%DynRup%rho_c, DISC%DynRup%TP_Lambda, Theta_tmp(:), Sigma_tmp(:), S(iBndGP), LocSR(iBndGP), DISC%DynRup%TP_grid, DISC%DynRup%TP_DFinv, DISC%DynRup%Temperature(iBndGP,iFace), P_f(iBndGP))
                  ENDDO
              ENDIF
-             logInfo0(*) 'P_f Erste', P_f(1)
              n_stress = P - P_f
              sh_stress = ShTest
-
+             logInfo0(*) 'Pore Pressure, normal Stress, effect stress', P_f(1), P(1), n_stress(1)
 
              SRtest=LocSR  ! We use as first guess the SR value of the previous time step
              !
@@ -1584,17 +1577,14 @@ MODULE Eval_friction_law_mod
                      !recover original values as it gets overwritten in Therm_pressure routine
                      Theta_tmp = DISC%DynRup%TP_Theta_array(iBndGP,iFace,:)
                      Sigma_tmp = DISC%DynRup%TP_Sigma_array(iBndGP,iFace,:)
-                     CALL Thermal_pressure_3D(DISC, time_inc, DISC%DynRup%TP_nz, DISC%DynRup%alpha_th, DISC%DynRup%alpha_hy, DISC%DynRup%rho_c, DISC%DynRup%TP_Lambda, Theta_tmp(:), Sigma_tmp(:), S(iBndGP), LocSR(iBndGP), DISC%DynRup%TP_grid, DISC%DynRup%TP_DFinv, DISC%DynRup%TP(iBndGP,iFace,1), DISC%DynRup%TP(iBndGP,iFace,2))
+                     CALL Thermal_pressure_3D(DISC, time_inc, DISC%DynRup%TP_nz, DISC%DynRup%alpha_th, DISC%DynRup%alpha_hy, DISC%DynRup%rho_c, DISC%DynRup%TP_Lambda, Theta_tmp(:), Sigma_tmp(:), S(iBndGP), LocSR(iBndGP), DISC%DynRup%TP_grid, DISC%DynRup%TP_DFinv, DISC%DynRup%Temperature(iBndGP,iFace), P_f(iBndGP))
                      !update final TP
-                     P_f = - DISC%DynRup%TP(iBndGP,iFace,2)
                      DISC%DynRup%TP_Theta_array(iBndGP,iFace,:) = Theta_tmp(:)
                      DISC%DynRup%TP_Sigma_array(iBndGP,iFace,:) = Sigma_tmp(:)
                 ENDDO
          ENDIF
 
          ! update stress change
-         logInfo0(*) 'Pressure', P(1)
-         logInfo0(*) 'Pore pressure Ende', P_f(1)
          LocTracXY = -((EQN%InitialStressInFaultCS(:,4,iFace) + XYStressGP(:,iTimeGP))/ShTest)*LocMu*(P - P_f)
          LocTracXZ = -((EQN%InitialStressInFaultCS(:,6,iFace) + XZStressGP(:,iTimeGP))/ShTest)*LocMu*(P - P_f)
          LocTracXY = LocTracXY - EQN%InitialStressInFaultCS(:,4,iFace)

@@ -230,16 +230,18 @@ MODULE ini_model_DR_mod
       ALLOCATE(  DISC%DynRup%RS_a_array(DISC%Galerkin%nBndGP, MESH%Fault%nSide)        )
       call c_interoperability_addFaultParameter("rs_a" // c_null_char, DISC%DynRup%RS_a_array)
       if (EQN%FL == 103) then
-        allocate( DISC%DynRup%RS_srW_array(DISC%Galerkin%nBndGP, MESH%Fault%nSide), &
+        ALLOCATE( DISC%DynRup%RS_srW_array(DISC%Galerkin%nBndGP, MESH%Fault%nSide), &
                   DISC%DynRup%RS_sl0_array(DISC%Galerkin%nBndGP,MESH%Fault%nSide),  &
                   nuc_xx(DISC%Galerkin%nBndGP,MESH%Fault%nSide),                    &
                   nuc_yy(DISC%Galerkin%nBndGP,MESH%Fault%nSide),                    &
                   nuc_zz(DISC%Galerkin%nBndGP,MESH%Fault%nSide),                    &
                   nuc_xy(DISC%Galerkin%nBndGP,MESH%Fault%nSide),                    &
                   nuc_yz(DISC%Galerkin%nBndGP,MESH%Fault%nSide),                    &
-                  nuc_xz(DISC%Galerkin%nBndGP,MESH%Fault%nSide)                     )
+                  nuc_xz(DISC%Galerkin%nBndGP,MESH%Fault%nSide),                    &
+                  DISC%DynRup%P_f_array(DISC%Galerkin%nBndGP,MESH%Fault%nSide)      )
         call c_interoperability_addFaultParameter("rs_srW" // c_null_char, DISC%DynRup%RS_srW_array)
         call c_interoperability_addFaultParameter("RS_sl0" // c_null_char, DISC%DynRup%RS_sl0_array)
+        call c_interoperability_addFaultParameter("P_f" // c_null_char, DISC%DynRup%P_f_array)
         if (faultParameterizedByTraction) then
           call c_interoperability_addFaultParameter("Tnuc_n" // c_null_char, nuc_xx)
           call c_interoperability_addFaultParameter("Tnuc_s" // c_null_char, nuc_xy)
@@ -256,7 +258,7 @@ MODULE ini_model_DR_mod
           call c_interoperability_addFaultParameter("nuc_xz" // c_null_char, nuc_xz)
         endif
         if (DISC%DynRup%ThermalPress.EQ.1) then
-          ALLOCATE(DISC%DynRup%TP(DISC%Galerkin%nBndGP, MESH%Fault%nSide,2))
+          ALLOCATE(DISC%DynRup%Temperature(DISC%Galerkin%nBndGP, MESH%Fault%nSide))
           ALLOCATE(DISC%DynRup%TP_Sigma_array(DISC%Galerkin%nBndGP, MESH%Fault%nSide,DISC%DynRup%TP_nz))
           ALLOCATE(DISC%DynRup%TP_Theta_array(DISC%Galerkin%nBndGP, MESH%Fault%nSide,DISC%DynRup%TP_nz))
           ALLOCATE(DISC%DynRup%TP_grid(DISC%DynRup%TP_nz))
@@ -616,8 +618,7 @@ MODULE ini_model_DR_mod
           tmp  = iniSlipRate*0.5/DISC%DynRup%RS_sr0 * EXP(EQN%IniStateVar(iBndGP,iFace)/ DISC%DynRup%RS_a_array(iBndGP,iFace))
           EQN%IniMu(iBndGP,iFace)=DISC%DynRup%RS_a_array(iBndGP,iFace) * LOG(tmp + SQRT(tmp**2 + 1.0D0))
           IF (DISC%DynRup%ThermalPress.EQ.1) THEN
-              DISC%DynRup%TP(iBndGP,iFace,1) = DISC%DynRup%IniTemp
-              DISC%DynRup%TP(iBndGP,iFace,2) = DISC%DynRup%IniPP_xx
+              DISC%DynRup%Temperature(iBndGP,iFace) = DISC%DynRup%IniTemp
               DO inz = 1,DISC%DynRup%TP_nz ! Loop over all points in the wavenumber domain
                   DISC%DynRup%TP_Theta_array(iBndGP,iFace,inz) = DISC%DynRup%TP_Theta
                   DISC%DynRup%TP_Sigma_array(iBndGP,iFace,inz) = DISC%DynRup%TP_Sigma

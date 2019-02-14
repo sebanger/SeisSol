@@ -910,8 +910,10 @@ MODULE TypesDef
      REAL                                   :: RS_b                             !< RS constitutive parameter "b"
      REAL                                   :: RS_iniSlipRate1                  !< initial slip rate for rate and state friction
      REAL                                   :: RS_iniSlipRate2                  !< initial slip rate for rate and state friction
+     REAL, ALLOCATABLE                      :: P_f_array(:,:)                   !< Reference pore pressure, array of spatial dependency
+     REAL                                   :: P_f                              !< Reference pore pressure
      INTEGER                                :: ThermalPress                     !< Thermal pressurization, (0) = no thermal pressurization assumed, (1) thermal pressurization at the fault
-     REAL, POINTER                          :: TP(:,:,:)                        !<TP variable: temp and pore pressure at every GP
+     REAL, ALLOCATABLE                      :: Temperature(:,:)                 !<TP variable: temperature at every GP
      REAL                                   :: TP_Theta                         !<TP variable: previous temp for each wavenumber at every GP
      REAL                                   :: TP_Sigma                         !<TP variable: previous pore pressure for each wavenumber at every GP
      REAL, ALLOCATABLE                      :: TP_Theta_array(:,:,:)
